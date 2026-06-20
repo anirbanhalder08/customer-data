@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Profile</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #eef2f7, #e3e8f0);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .card {
+            background: #ffffff;
+            padding: 28px 25px;
+            border-radius: 14px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+            width: 300px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 22px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #edf0f5;
+        }
+
+        .header img {
+            width: 150px;
+            height: auto;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 12px;
+            color: #999;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .section-title {
+            font-size: 10px;
+            font-weight: 700;
+            color: #b0b8c8;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-bottom: 12px;
+        }
+
+        .field-group { margin-bottom: 13px; }
+        .field-group:last-child { margin-bottom: 0; }
+
+        label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid #e4e8ef;
+            border-radius: 7px;
+            background-color: #f7f9fc;
+            color: #3a3f4b;
+            font-size: 13px;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            outline: none;
+            cursor: default;
+        }
+
+        /* Status badge */
+        .status-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+        .status-active { background: #e6f9f0; color: #1a9e5c; }
+        .status-inactive { background: #fdecea; color: #d93025; }
+
+        /* Loading & Error states */
+        .state-box {
+            text-align: center;
+            padding: 20px 0;
+            color: #aaa;
+            font-size: 13px;
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid #e4e8ef;
+            border-top-color: #4a90d9;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .error-icon { font-size: 28px; margin-bottom: 8px; }
+        .error-msg { color: #d93025; font-size: 13px; font-weight: 500; }
+        .error-sub { color: #aaa; font-size: 11px; margin-top: 4px; }
+
+        /* ID badge in header */
+        .id-badge {
+            display: inline-block;
+            background: #eef2f7;
+            color: #7a8499;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-top: 4px;
+            letter-spacing: 0.3px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+
+    <!-- Header -->
+    <div class="header">
+        <img src="https://services-public-de-na1.niceincontact.com/rich-message-settings/user-images/3036/61dca57c-f3c4-46c9-8bad-c46e38823145.png" alt="Logo">
+        <p>Customer Profile</p>
+        <span class="id-badge" id="id-badge"></span>
+    </div>
+
+    <!-- Loading State -->
+    <div class="state-box" id="loading-state">
+        <div class="spinner"></div>
+        Fetching customer data...
+    </div>
+
+    <!-- Error State -->
+    <div class="state-box" id="error-state" style="display:none;">
+        <div class="error-icon">⚠️</div>
+        <div class="error-msg" id="error-msg">Customer not found</div>
+        <div class="error-sub" id="error-sub">Please check the ID and try again</div>
+    </div>
+
+    <!-- Profile Data -->
+    <div id="profile-data" style="display:none;">
+
+        <div class="section-title">Member Details</div>
+
+        <div class="field-group">
+            <label>Name</label>
+            <input type="text" id="field-name" readonly>
+        </div>
+
+        <div class="field-group">
+            <label>SSN Number</label>
+            <input type="text" id="field-ssn" readonly>
+        </div>
+
+        <div class="field-group">
+            <label>Policy Number</label>
+            <input type="text" id="field-policy" readonly>
+        </div>
+
+        <div class="field-group">
+            <label>Date of Birth</label>
+            <input type="text" id="field-dob" readonly>
+        </div>
+
+        <div class="field-group">
+            <label>Policy Category</label>
+            <input type="text" id="field-category" readonly>
+        </div>
+
+        <div class="field-group">
+            <label>Account Status</label><br>
+            <span class="status-badge" id="field-status"></span>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+    const BASE_URL = "https://66b041df6a693a95b5383083.mockapi.io/demo/demoapi/";
+
+    // Read ID from URL: supports ?id=1234 or /profile.html/1234
+    function getIdFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("id")) return params.get("id");
+
+        // Also support hash: #1234
+        const hash = window.location.hash.replace("#", "");
+        if (hash) return hash;
+
+        // Also support path: /1234 at end
+        const parts = window.location.pathname.split("/").filter(Boolean);
+        const last = parts[parts.length - 1];
+        if (last && /^\d+$/.test(last)) return last;
+
+        return null;
+    }
+
+    async function loadCustomer(id) {
+        try {
+            const res = await fetch(BASE_URL + id);
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            const data = await res.json();
+            showProfile(data, id);
+        } catch (err) {
+            showError("Customer not found", "No record exists for ID: " + id);
+        }
+    }
+
+    function showProfile(data, id) {
+        document.getElementById("loading-state").style.display = "none";
+        document.getElementById("profile-data").style.display = "block";
+        document.getElementById("id-badge").textContent = "ID: " + id;
+
+        document.getElementById("field-name").value     = data.name        || "—";
+        document.getElementById("field-ssn").value      = data.ssnnumber   || "—";
+        document.getElementById("field-policy").value   = data.policynumber || "—";
+        document.getElementById("field-dob").value      = data.dateofbirth  || "—";
+        document.getElementById("field-category").value = data.policycategory || "—";
+
+        const statusEl = document.getElementById("field-status");
+        const status = data.accountStatus || "Unknown";
+        statusEl.textContent = status;
+        statusEl.className = "status-badge " +
+            (status.toLowerCase() === "active" ? "status-active" : "status-inactive");
+    }
+
+    function showError(msg, sub) {
+        document.getElementById("loading-state").style.display = "none";
+        document.getElementById("error-state").style.display = "block";
+        document.getElementById("error-msg").textContent = msg;
+        document.getElementById("error-sub").textContent = sub;
+    }
+
+    // Init
+    const id = getIdFromUrl();
+    if (id) {
+        loadCustomer(id);
+    } else {
+        showError("No ID provided", 'Use: yoursite.com/profile.html?id=1234');
+    }
+</script>
+
+</body>
+</html>
